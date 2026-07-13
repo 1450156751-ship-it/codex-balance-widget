@@ -1,6 +1,6 @@
 {
   "name": "codex-balance-widget",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Windows desktop widget for monitoring compatible API balances.",
   "main": "app/main.js",
   "author": "1450156751-ship-it",
@@ -16,7 +16,7 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder --publish never"
   },
   "devDependencies": {
     "electron": "^37.2.6",
