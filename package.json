@@ -1,0 +1,52 @@
+{
+  "name": "codex-balance-widget",
+  "version": "1.0.0",
+  "description": "A Windows desktop widget for monitoring compatible API balances.",
+  "main": "app/main.js",
+  "author": "1450156751-ship-it",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1450156751-ship-it/codex-balance-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/1450156751-ship-it/codex-balance-widget/issues"
+  },
+  "homepage": "https://github.com/1450156751-ship-it/codex-balance-widget#readme",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "local.codex.balancewidget",
+    "productName": "Codex Balance",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "app/**/*.js",
+      "app/**/*.html",
+      "app/**/*.css",
+      "app/assets/companion-placeholder.svg",
+      "app/assets/tray-icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    }
+  }
+}

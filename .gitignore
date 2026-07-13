@@ -1,0 +1,16 @@
+node_modules/
+release/
+work/
+outputs/
+
+*.asar
+*.exe
+*.nsis.7z
+
+.env
+.env.*
+!.env.example
+settings.json
+
+# Personal companion artwork remains local and is never published.
+app/assets/companion*.png

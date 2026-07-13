@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Balance</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="widget" aria-label="API 余额组件">
+      <section class="balance-card">
+        <header class="drag-region">
+          <div class="identity"><span class="status-dot"></span><span>API BALANCE</span></div>
+          <div class="window-controls no-drag">
+            <button id="minimize-button" class="icon-button minimize-button" title="最小化到托盘" aria-label="最小化"><span></span></button>
+            <button id="settings-button" class="icon-button" title="设置" aria-label="设置">设置</button>
+          </div>
+        </header>
+        <div class="artwork-layer" aria-hidden="true">
+          <img class="companion-blur" src="../assets/companion-placeholder.svg" alt="" />
+          <img class="companion" src="../assets/companion-placeholder.svg" alt="" />
+        </div>
+        <div class="content">
+          <div class="balance-heading"><p class="eyebrow">可用余额</p><span class="source">MODCON</span></div>
+          <div id="balance" class="balance">--</div>
+          <div id="balance-progress" class="balance-progress" data-level="unknown" aria-label="余额状态"><span id="balance-progress-fill"></span></div>
+          <div class="state-row"><span id="balance-state" class="balance-state">等待余额数据</span><p id="status" class="status">等待 Codex 启动</p></div>
+        </div>
+        <footer>
+          <button id="refresh-button" class="text-button no-drag">刷新余额</button>
+          <button id="pin-button" class="text-button no-drag">不置顶</button>
+        </footer>
+      </section>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>

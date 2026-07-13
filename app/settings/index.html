@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Balance 设置</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="settings-shell">
+      <header><div><p>CODEX BALANCE</p><h1>余额接口设置</h1></div><button id="close" aria-label="关闭">关闭</button></header>
+      <form id="settings-form">
+        <label><span>查询地址</span><input name="endpoint" type="url" required /></label>
+        <label><span>API Key</span><input name="apiKey" type="password" placeholder="已保存，留空则不修改" autocomplete="off" /></label>
+        <label><span>认证请求头</span><input name="header" required /></label>
+        <label><span>认证前缀</span><input name="prefix" /></label>
+        <label><span>余额字段路径</span><input name="balancePath" placeholder="auto" /></label>
+        <p class="note">API Key 通过 Windows 加密保存，仅当前 Windows 账户可读取。</p>
+        <div class="actions"><button id="clear-key" class="danger" type="button">清除已保存 Key</button><span></span><button id="cancel" class="secondary" type="button">取消</button><button class="primary" type="submit">保存并刷新</button></div>
+      </form>
+    </main>
+    <script src="renderer.js"></script>
+  </body>
+</html>
