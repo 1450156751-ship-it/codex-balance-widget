@@ -1,0 +1,34 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Get-ChildItem -Path release -Filter "* Setup *.exe" |
+            Where-Object { $_.Name -notlike "*__uninstaller.exe" } |
+            Select-Object -First 1
+          if (-not $installer) { throw "Installer was not created." }
+          $checksumPath = "$($installer.FullName).sha256"
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLower()
+          Set-Content -NoNewline -Encoding ascii -LiteralPath $checksumPath -Value "$hash *$($installer.Name)"
+          gh release create $env:GITHUB_REF_NAME $installer.FullName $checksumPath --title "Codex Balance $env:GITHUB_REF_NAME" --generate-notes
