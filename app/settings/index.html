@@ -15,6 +15,11 @@
         <label><span>认证请求头</span><input name="header" required /></label>
         <label><span>认证前缀</span><input name="prefix" /></label>
         <label><span>余额字段路径</span><input name="balancePath" placeholder="auto" /></label>
+        <section class="companion-settings" aria-labelledby="companion-title">
+          <div><strong id="companion-title">右侧照片</strong><span id="companion-status">正在使用默认占位图</span></div>
+          <div class="companion-actions"><button id="select-companion" class="secondary" type="button">选择图片</button><button id="clear-companion" class="danger" type="button">恢复默认</button></div>
+          <p>支持 PNG、JPG、WEBP；建议使用 600 × 900 或更大的竖图，最短边至少 300 像素，文件不超过 10 MB。图片仅保存于本机。</p>
+        </section>
         <p class="note">API Key 通过 Windows 加密保存，仅当前 Windows 账户可读取。</p>
         <div class="actions"><button id="clear-key" class="danger" type="button">清除已保存 Key</button><span></span><button id="cancel" class="secondary" type="button">取消</button><button class="primary" type="submit">保存并刷新</button></div>
       </form>

@@ -5,6 +5,8 @@ const progressFillNode = document.querySelector("#balance-progress-fill");
 const balanceStateNode = document.querySelector("#balance-state");
 const pinButton = document.querySelector("#pin-button");
 const card = document.querySelector(".balance-card");
+const companionNodes = document.querySelectorAll(".companion, .companion-blur");
+const defaultCompanionUrl = new URL("../assets/companion-placeholder.svg", window.location.href).href;
 let activePointerId = null;
 let dragFrame = null;
 
@@ -64,12 +66,20 @@ function render(state) {
   pinButton.textContent = state.pinned ? "已置顶" : "不置顶";
 }
 
+function renderCompanion(companion) {
+  const imageUrl = companion.url || defaultCompanionUrl;
+  companionNodes.forEach((node) => {
+    if (node.src !== imageUrl) node.src = imageUrl;
+  });
+}
+
 document.querySelector("#refresh-button").addEventListener("click", () => window.balanceWidget.refresh());
 pinButton.addEventListener("click", () => window.balanceWidget.togglePin());
 document.querySelector("#minimize-button").addEventListener("click", () => window.balanceWidget.hide());
 document.querySelector("#settings-button").addEventListener("click", () => window.balanceWidget.openSettings());
 
 window.balanceWidget.onState(render);
+window.balanceWidget.onCompanion(renderCompanion);
 window.balanceWidget.onDragPreview(({ side }) => {
   card.dataset.dockSide = side || "";
   card.classList.toggle("dock-preview", Boolean(side));
@@ -84,3 +94,4 @@ window.balanceWidget.onDock(({ side, impact }) => {
   setTimeout(() => card.classList.remove(className), 320);
 });
 window.balanceWidget.getState().then(render);
+window.balanceWidget.getCompanion().then(renderCompanion);

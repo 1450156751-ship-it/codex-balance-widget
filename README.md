@@ -11,6 +11,7 @@ A compact Windows desktop widget for monitoring the balance exposed by a compati
 - Polls the configured balance endpoint every five minutes and displays two decimal places.
 - Uses `GET` with a configurable authentication header and prefix. The default endpoint is `https://modcon.top/v1/usage` for convenience only; any compatible provider can be configured in Settings.
 - Recognizes common balance fields automatically, or accepts a custom dot-separated JSON path.
+- Lets each user choose a local right-side companion image. PNG, JPG, and WEBP files up to 10 MB are accepted; portrait images of at least 600 x 900 are recommended.
 - Stores the API key encrypted for the current Windows account. Keys, cookies, JWTs, and browser sessions are never committed to this repository.
 
 ## Requirements
@@ -39,6 +40,7 @@ This creates an unpacked local build in `release/`. To generate an NSIS installe
 ## Privacy and Security
 
 - The widget writes its encrypted settings to Electron's per-user application-data directory, outside the repository.
+- A selected companion image is copied into that same per-user application-data directory. It is never uploaded to GitHub or included in future releases.
 - Personal companion artwork, local build output, and environment files are intentionally ignored by Git.
 - Review and trust the API endpoint you enter. This project does not endorse or operate any API relay service.
 

@@ -1,8 +1,9 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, safeStorage, screen } = require("electron");
+const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, safeStorage, screen, dialog } = require("electron");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 
 const execFileAsync = promisify(execFile);
 const REFRESH_MS = 5 * 60 * 1000;
@@ -10,6 +11,9 @@ const CODEX_CHECK_MS = 3 * 1000;
 const DEFAULT_ENDPOINT = "https://modcon.top/v1/usage";
 const SNAP_DISTANCE = 22;
 const IMPACT_VELOCITY = 1.35;
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+const MAX_CUSTOM_IMAGE_BYTES = 10 * 1024 * 1024;
+const MIN_CUSTOM_IMAGE_DIMENSION = 300;
 
 let widget;
 let settingsWindow;
@@ -38,6 +42,18 @@ function configPath() {
   return path.join(app.getPath("userData"), "settings.json");
 }
 
+function companionDirectory() {
+  return path.join(app.getPath("userData"), "companion");
+}
+
+function isSafeCompanionFileName(fileName) {
+  return typeof fileName === "string" && /^custom-companion\.(png|jpe?g|webp)$/i.test(fileName);
+}
+
+function companionPath(fileName) {
+  return isSafeCompanionFileName(fileName) ? path.join(companionDirectory(), fileName) : null;
+}
+
 async function readSettings() {
   try {
     const raw = JSON.parse(await fs.readFile(configPath(), "utf8"));
@@ -49,9 +65,10 @@ async function readSettings() {
       apiKey: raw.apiKey && safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(Buffer.from(raw.apiKey, "base64")) : "",
       bounds: raw.bounds,
       pinned: Boolean(raw.pinned),
+      companionFile: isSafeCompanionFileName(raw.companionFile) ? raw.companionFile : null,
     };
   } catch {
-    return { endpoint: DEFAULT_ENDPOINT, header: "Authorization", prefix: "Bearer", balancePath: "auto", apiKey: "", bounds: null, pinned: false };
+    return { endpoint: DEFAULT_ENDPOINT, header: "Authorization", prefix: "Bearer", balancePath: "auto", apiKey: "", bounds: null, pinned: false, companionFile: null };
   }
 }
 
@@ -69,10 +86,79 @@ async function writeSettings(next) {
     apiKey: encryptedKey,
     bounds: next.bounds ?? existing.bounds,
     pinned: next.pinned ?? existing.pinned,
+    companionFile: next.companionFile === undefined ? existing.companionFile : next.companionFile,
   };
   await fs.mkdir(path.dirname(configPath()), { recursive: true });
   await fs.writeFile(configPath(), JSON.stringify(stored, null, 2), "utf8");
   return { ...stored, apiKey };
+}
+
+async function getCompanion() {
+  const settings = await readSettings();
+  const imagePath = companionPath(settings.companionFile);
+  if (!imagePath) return { custom: false, url: null, width: null, height: null };
+  try {
+    const metadata = await fs.stat(imagePath);
+    const image = nativeImage.createFromPath(imagePath);
+    if (image.isEmpty()) throw new Error("图片无法读取");
+    const { width, height } = image.getSize();
+    return { custom: true, url: `${pathToFileURL(imagePath).href}?v=${metadata.mtimeMs}`, width, height };
+  } catch {
+    return { custom: false, url: null, width: null, height: null };
+  }
+}
+
+function broadcastCompanion(companion) {
+  if (widget && !widget.isDestroyed()) widget.webContents.send("widget:companion", companion);
+}
+
+async function removeCustomCompanionFiles() {
+  await Promise.all([...SUPPORTED_IMAGE_EXTENSIONS].map(async (extension) => {
+    try {
+      await fs.unlink(path.join(companionDirectory(), `custom-companion${extension}`));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }));
+}
+
+async function selectCustomCompanion() {
+  const result = await dialog.showOpenDialog(settingsWindow || widget, {
+    title: "选择右侧照片",
+    properties: ["openFile"],
+    filters: [{ name: "图片", extensions: ["png", "jpg", "jpeg", "webp"] }],
+  });
+  if (result.canceled || !result.filePaths[0]) return getCompanion();
+
+  const sourcePath = result.filePaths[0];
+  const extension = path.extname(sourcePath).toLowerCase();
+  if (!SUPPORTED_IMAGE_EXTENSIONS.has(extension)) throw new Error("请选择 PNG、JPG 或 WEBP 图片");
+  const metadata = await fs.stat(sourcePath);
+  if (metadata.size > MAX_CUSTOM_IMAGE_BYTES) throw new Error("图片不能超过 10 MB");
+  const image = nativeImage.createFromPath(sourcePath);
+  if (image.isEmpty()) throw new Error("无法读取这张图片");
+  const { width, height } = image.getSize();
+  if (Math.min(width, height) < MIN_CUSTOM_IMAGE_DIMENSION) throw new Error("图片最短边至少需要 300 像素");
+
+  await fs.mkdir(companionDirectory(), { recursive: true });
+  const fileName = `custom-companion${extension}`;
+  const destinationPath = path.join(companionDirectory(), fileName);
+  if (path.resolve(sourcePath) !== path.resolve(destinationPath)) {
+    await removeCustomCompanionFiles();
+    await fs.copyFile(sourcePath, destinationPath);
+  }
+  await writeSettings({ companionFile: fileName });
+  const companion = await getCompanion();
+  broadcastCompanion(companion);
+  return companion;
+}
+
+async function clearCustomCompanion() {
+  await removeCustomCompanionFiles();
+  await writeSettings({ companionFile: null });
+  const companion = await getCompanion();
+  broadcastCompanion(companion);
+  return companion;
 }
 
 function extractBalance(payload, customPath) {
@@ -283,10 +369,10 @@ function showSettings() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 540,
-    height: 500,
-    minWidth: 540,
-    minHeight: 500,
+    width: 600,
+    height: 620,
+    minWidth: 600,
+    minHeight: 620,
     title: "Codex Balance 设置",
     modal: false,
     resizable: false,
@@ -369,6 +455,7 @@ function registerIpc() {
   ipcMain.on("widget:drag-end", endWidgetDrag);
   ipcMain.on("settings:close", () => settingsWindow?.close());
   ipcMain.handle("widget:get-state", async () => state);
+  ipcMain.handle("widget:get-companion", getCompanion);
   ipcMain.handle("widget:refresh", refreshBalance);
   ipcMain.handle("widget:toggle-pin", () => setPinned(!state.pinned));
   ipcMain.handle("widget:get-settings", async () => {
@@ -385,6 +472,8 @@ function registerIpc() {
     state = { ...state, balance: null, status: "API Key 已清除", updatedAt: null };
     broadcastState();
   });
+  ipcMain.handle("settings:select-companion", selectCustomCompanion);
+  ipcMain.handle("settings:clear-companion", clearCustomCompanion);
 }
 
 app.whenReady().then(async () => {

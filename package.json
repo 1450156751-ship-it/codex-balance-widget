@@ -1,6 +1,6 @@
 {
   "name": "codex-balance-widget",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Windows desktop widget for monitoring compatible API balances.",
   "main": "app/main.js",
   "author": "1450156751-ship-it",
